@@ -67,7 +67,6 @@ class Hook():
     def __init__(self):
         self.w_handle = FindWindowA(None, b"DARK SOULS")
         self.process_id = DWORD(0)
-        print(type(self.w_handle), type(self.process_id))
         GetWindowThreadProcessId(self.w_handle, pointer(self.process_id))
         # Open process with PROCESS_VM_OPERATION, PROCESS_VM_READ
         # and PROCESS_VM_WRITE access rights
@@ -81,7 +80,6 @@ class Hook():
 
     def get_module_base_address(self, module_name):
         lpszModuleName = module_name.encode("ascii")
-        print(lpszModuleName)
         # TH32CS_SNAPMODULE and TH32CS_SNAPMODULE32
         hSnapshot = CreateToolhelp32Snapshot(0x8 | 0x10, self.process_id)
         ModuleEntry32 = MODULEENTRY32()
@@ -111,13 +109,13 @@ class Hook():
     def write_memory(self, address, data):
         ptr = pointer((BYTE*len(data))(*data))
         WriteProcessMemory(self.handle, LPVOID(address), ptr,
-                           len(data), pointer(SIZE(0)))
+                           SIZE(len(data)), pointer(SIZE(0)))
 
     def write_int(self, address, value, length, signed=False):
         try:
             data = value.to_bytes(length, byteorder='little', signed=signed)
         except AttributeError:
-            raise TypeError("expected 'int', found {}".format(str(type(value)).strip("<>acls ")))
+            raise TypeError("expected 'int' instead of {}".format(str(type(value)).strip("<>acls ")))
         self.write_memory(address, data)
 
     def read_int(self, address, length, signed=False):
