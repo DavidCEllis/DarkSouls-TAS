@@ -4,7 +4,7 @@
 
     -install python 3.6
  
-    -copy taslib.dll, wrapper.py and ds_tas.py into one folder
+    -copy hook.py and ds_tas.py into one folder
  
     -create your own python file and import ds_tas, alternatively use scripts.py
 

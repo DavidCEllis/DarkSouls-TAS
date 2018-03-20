@@ -1,6 +1,6 @@
 import time
 from collections import deque
-from wrapper import Hook
+from hook import Hook
 
 
 class Tas(object):
