@@ -59,10 +59,12 @@ CloseHandle = quick_win_define("Kernel32.CloseHandle",
                                BOOL, HANDLE)
 
 
-class Hook():
-    """ Hook dark souls
+class Hook:
+    """
+    Hook Dark Souls
 
-    Provides functions to read and write the memory of dark souls"""
+    Provides functions to read and write the memory of dark souls
+    """
 
     def __init__(self):
         self.w_handle = FindWindowA(None, b"DARK SOULS")
@@ -84,9 +86,9 @@ class Hook():
         hSnapshot = CreateToolhelp32Snapshot(0x8 | 0x10, self.process_id)
         ModuleEntry32 = MODULEENTRY32()
         ModuleEntry32.dwSize = sizeof(MODULEENTRY32)
-        if (Module32First(hSnapshot, pointer(ModuleEntry32))):
+        if Module32First(hSnapshot, pointer(ModuleEntry32)):
             while True:
-                if (ModuleEntry32.szModule == lpszModuleName):
+                if ModuleEntry32.szModule == lpszModuleName:
                     dwModuleBaseAddress = ModuleEntry32.modBaseAddr
                     break
                 if Module32Next(hSnapshot, pointer(ModuleEntry32)):
@@ -123,7 +125,9 @@ class Hook():
         return int.from_bytes(out, byteorder='little', signed=signed)
 
     def read_input(self):
-        ''' Returns a list of 20 integers.
+        """
+        Returns a list of 20 integers.
+
         index: meaning (values)
         0: dpad_up (0 or 1)
         1: dpad_down (0 or 1)
@@ -144,12 +148,13 @@ class Hook():
         16: l_thumb_x (-32,768 to 32,767)
         17: l_thumb_y (-32,768 to 32,767)
         18: r_thumb_x (-32,768 to 32,767)
-        19: r_thumb_y (-32,768 to 32,767) '''
+        19: r_thumb_y (-32,768 to 32,767)
+        """
         ptr = self.xinput_address + 0x10C44
         ptr = self.read_int(ptr, 4)
         ptr = self.read_int(ptr, 4)
         if ptr == 0:
-            raise RuntimeError("couldn't find the pointer to the controller")
+            raise RuntimeError("Couldn't find the pointer to the controller")
         ptr += 0x28
 
         data = self.read_memory(ptr, 12)
@@ -171,7 +176,9 @@ class Hook():
         return out
 
     def write_input(self, inputs):
-        ''' Expects a list of 20 integers.
+        """
+        Expects a list of 20 integers.
+
         index: meaning (values)
         0: dpad_up (0 or 1)
         1: dpad_down (0 or 1)
@@ -192,7 +199,8 @@ class Hook():
         16: l_thumb_x (-32,768 to 32,767)
         17: l_thumb_y (-32,768 to 32,767)
         18: r_thumb_x (-32,768 to 32,767)
-        19: r_thumb_y (-32,768 to 32,767) '''
+        19: r_thumb_y (-32,768 to 32,767)
+        """
         data = bytes()
 
         buttons = 0
@@ -219,8 +227,10 @@ class Hook():
         self.write_memory(ptr, data)
 
     def controller(self, state):
-        ''' if state == True -> enables controller
-        if state == False -> disables controller '''
+        """
+        if state == True -> enables controller
+        if state == False -> disables controller
+        """
         if state:
             self.write_memory(self.xinput_address + 0x6945,
                               b'\xe8\xa6\xfb\xff\xff')
@@ -229,8 +239,10 @@ class Hook():
                               b'\x90\x90\x90\x90\x90')
 
     def background_input(self, state):
-        ''' if state == True -> enables input while the game is in backgound
-        if state == False -> disables input while the game is in backgound '''
+        """
+        if state == True -> enables input while the game is in backgound
+        if state == False -> disables input while the game is in backgound
+        """
         if self.debug:
             ptr = 0xF75BF3
         else:
@@ -241,19 +253,24 @@ class Hook():
             self.write_memory(ptr, b'\x0f\x94\xc0')
 
     def igt(self):
-        ''' returns IGT '''
+        """
+        Get the In Game Time
+        :return: In game time in milliseconds
+        """
         if self.debug:
             ptr = 0x137C8C0
         else:
             ptr = 0x1378700
         ptr = self.read_int(ptr, 4)
         if ptr == 0:
-            raise RuntimeError("couldn't find the pointer to IGT")
+            raise RuntimeError("Couldn't find the pointer to IGT")
         ptr += 0x68
         return self.read_int(ptr, 4)
 
     def frame_count(self):
-        ''' Returns how many frames were displayed since start of the game. '''
+        """
+        Returns how many frames were displayed since start of the game.
+        """
         if self.debug:
             ptr = 0x137C7C4
         else:

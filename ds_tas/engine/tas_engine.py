@@ -1,7 +1,7 @@
 import time
 from contextlib import contextmanager
 
-from ds_tas.engine.wrapper import Hook
+from .hook import Hook
 
 
 class TAS:
