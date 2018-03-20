@@ -246,7 +246,7 @@ class Hook:
         if self.debug:
             ptr = 0xF75BF3
         else:
-            ptr = 0x1378700
+            ptr = 0xF72543
         if state:
             self.write_memory(ptr, b'\xb0\x01\x90')
         else:
@@ -269,7 +269,9 @@ class Hook:
 
     def frame_count(self):
         """
-        Returns how many frames were displayed since start of the game.
+        Get the number of frames that have been shown since the start of the game.
+
+        :return: Frame count
         """
         if self.debug:
             ptr = 0x137C7C4
@@ -277,6 +279,6 @@ class Hook:
             ptr = 0x1378604
         ptr = self.read_int(ptr, 4)
         if ptr == 0:
-            raise RuntimeError("couldn't find the pointer to the frame count")
+            raise RuntimeError("Couldn't find the pointer to the frame count")
         ptr += 0x58
         return self.read_int(ptr, 4)
