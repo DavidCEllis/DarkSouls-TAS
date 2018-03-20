@@ -31,7 +31,7 @@ def quick_win_define(name, output, *args, **kwargs):
     dllname, fname = name.split('.')
     params = kwargs.get('params', None)
     if params:
-        params = tuple([(x, ) for x in params])
+        params = tuple((x, ) for x in params)
     prototype = WINFUNCTYPE(output, *args)
     func = prototype((fname, getattr(windll, dllname)), params)
     err = kwargs.get('err', err_on_zero_or_null_check)
