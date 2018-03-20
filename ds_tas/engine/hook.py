@@ -1,5 +1,7 @@
 """ Accessing the memory of dark souls"""
-from ctypes import windll, WinError, WINFUNCTYPE, POINTER, pointer, Structure, sizeof, cast
+from ctypes import (
+    windll, WinError, WINFUNCTYPE, POINTER, pointer, Structure, sizeof, cast
+)
 from ctypes.wintypes import (
     BOOL, BYTE, CHAR, DWORD, HANDLE, HMODULE,
     HWND, LPCSTR, LPCVOID, LPDWORD, LPVOID, SIZE
@@ -133,7 +135,8 @@ class Hook:
         try:
             data = value.to_bytes(length, byteorder='little', signed=signed)
         except AttributeError:
-            raise TypeError("expected 'int' instead of {}".format(str(type(value)).strip("<>acls ")))
+            attr_type = str(type(value)).strip("<>acls ")
+            raise TypeError(f"Expected 'int' instead of {attr_type}")
         self.write_memory(address, data)
 
     def read_int(self, address, length, signed=False):
