@@ -1,6 +1,9 @@
 """ Accessing the memory of dark souls"""
 from ctypes import windll, WinError, WINFUNCTYPE, POINTER, pointer, Structure, sizeof, cast
-from ctypes.wintypes import *
+from ctypes.wintypes import (
+    BOOL, BYTE, CHAR, DWORD, HANDLE, HMODULE,
+    HWND, LPCSTR, LPCVOID, LPDWORD, LPVOID, SIZE
+)
 
 
 class MODULEENTRY32(Structure):
@@ -33,28 +36,37 @@ def quick_win_define(name, output, *args, **kwargs):
     if err:
         func.errcheck = err
 
-    def ret(*args):
-        return output(func(*args))
+    def ret(*args2):
+        return output(func(*args2))
     return ret
+
 
 ReadProcessMemory = quick_win_define("Kernel32.ReadProcessMemory",
                                      BOOL, HANDLE, LPCVOID, LPVOID,
                                      SIZE, POINTER(SIZE))
+
 WriteProcessMemory = quick_win_define("Kernel32.WriteProcessMemory",
                                       BOOL, HANDLE, LPVOID, LPCVOID,
                                       SIZE, POINTER(SIZE))
+
 FindWindowA = quick_win_define("User32.FindWindowA",
                                HWND, LPCSTR, LPCSTR)
+
 GetWindowThreadProcessId = quick_win_define("User32.GetWindowThreadProcessId",
                                             DWORD, HWND, LPDWORD)
+
 OpenProcess = quick_win_define("Kernel32.OpenProcess",
                                HANDLE, DWORD, BOOL, DWORD)
+
 CreateToolhelp32Snapshot = quick_win_define("Kernel32.CreateToolhelp32Snapshot",
                                             HANDLE, DWORD, DWORD)
+
 Module32First = quick_win_define("Kernel32.Module32First",
                                  BOOL, HANDLE, POINTER(MODULEENTRY32))
+
 Module32Next = quick_win_define("Kernel32.Module32Next",
                                 BOOL, HANDLE, POINTER(MODULEENTRY32))
+
 CloseHandle = quick_win_define("Kernel32.CloseHandle",
                                BOOL, HANDLE)
 
@@ -74,7 +86,7 @@ class Hook:
         # and PROCESS_VM_WRITE access rights
         self.handle = OpenProcess(0x8 | 0x10 | 0x20, False, self.process_id)
         self.xinput_address = self.get_module_base_address("XINPUT1_3.dll")
-        self.is_debug()
+        self.debug = self.is_debug()
 
     def __del__(self):
         CloseHandle(self.handle)
@@ -99,8 +111,12 @@ class Hook:
         return cast(dwModuleBaseAddress, LPVOID).value
 
     def is_debug(self):
-        self.debug = self.read_memory(0x400080, 4) == b"\xb4\x34\x96\xce"
-        return self.debug
+        """
+        Identify if the debug build of Dark Souls is running.
+
+        :return: True if running the debug build, False otherwise.
+        """
+        return self.read_memory(0x400080, 4) == b"\xb4\x34\x96\xce"
 
     def read_memory(self, address, length):
         out = (BYTE*length)()
@@ -255,6 +271,7 @@ class Hook:
     def igt(self):
         """
         Get the In Game Time
+
         :return: In game time in milliseconds
         """
         if self.debug:
@@ -269,7 +286,8 @@ class Hook:
 
     def frame_count(self):
         """
-        Get the number of frames that have been shown since the start of the game.
+        Get the number of frames that have been shown
+        since the start of the game.
 
         :return: Frame count
         """
