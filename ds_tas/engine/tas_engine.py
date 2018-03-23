@@ -17,6 +17,9 @@ class TAS:
         """
         return self.h.igt()
 
+    def frame_count(self):
+        return self.h.frame_count()
+
     def clear(self):
         """
         Clear the keypress queue
