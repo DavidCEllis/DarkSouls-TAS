@@ -81,6 +81,23 @@ class Hook:
     """
 
     def __init__(self):
+        # Declare instance variables
+        self.w_handle = None
+        self.process_id = None
+        self.handle = None
+        self.xinput_address = None
+        self.debug = False
+
+        # Actually get the hook
+        self.acquire()
+
+    def __del__(self):
+        self.release()
+
+    def acquire(self):
+        """
+        Acquire a hook into the game window.
+        """
         self.w_handle = FindWindowA(None, b"DARK SOULS")
         self.process_id = DWORD(0)
         GetWindowThreadProcessId(self.w_handle, pointer(self.process_id))
@@ -90,9 +107,21 @@ class Hook:
         self.xinput_address = self.get_module_base_address("XINPUT1_3.dll")
         self.debug = self.is_debug()
 
-    def __del__(self):
-        CloseHandle(self.handle)
-        CloseHandle(self.w_handle)
+    def release(self):
+        """
+        Release the hooks
+        """
+
+        if not (self.handle or self.w_handle):
+            return
+
+        handles = [self.handle, self.w_handle]
+        for handle in handles:
+            try:
+                # If the application is closed this will fail
+                CloseHandle(handle)
+            except OSError:
+                pass
 
     def get_module_base_address(self, module_name):
         lpszModuleName = module_name.encode("ascii")
