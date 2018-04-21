@@ -9,13 +9,14 @@ import code
 import textwrap
 
 from ds_tas import KeySequence, KeyPress, basics
-from ds_tas.scripts import menus, glitches
+from ds_tas.scripts import menus, glitches, timers
 from ds_tas.engine import tas
 
 __version__ = '2.1.1'
 
 # Variable names to skip
-skip_vars = ['sys', 'code', 'copy', 'textwrap', 'raw_banner', 'banner', 'skip_vars']
+skip_vars = ['sys', 'code', 'copy', 'textwrap',
+             'raw_banner', 'banner', 'skip_vars']
 
 raw_banner = f"""
     Welcome to Dark Souls TAS Tools v{__version__}.
@@ -29,7 +30,7 @@ raw_banner = f"""
         s_aim_up, s_aim_down, s_aim_left, s_aim_right
         
     Basic Functions:
-        waitfor, walkfor, runfor, sprintfor, igt
+        waitfor, walkfor, runfor, sprintfor, igt, timers
     
     Recording and Playback:
         Functions:
@@ -39,6 +40,9 @@ raw_banner = f"""
     
     Raw Classes:
         KeyPress, KeySequence
+    
+    Engine:
+        tas
     
     Extension modules:
         menus, glitches
@@ -70,6 +74,8 @@ base_locals['KeySequence'] = KeySequence
 base_locals['KeyPress'] = KeyPress
 base_locals['menus'] = menus
 base_locals['glitches'] = glitches
+base_locals['timers'] = timers
+base_locals['tas'] = tas
 
 base_locals['recording'] = basics.select + basics.right + basics.a
 
@@ -78,14 +84,15 @@ class Helper:
     """
     Helper class for interactive terminal.
 
-    Gives basic information on using keypresses and keysequences or help documentation
-    on functions and classes.
+    Gives basic information on using keypresses and keysequences
+    or help documentation on functions and classes.
 
     This is a class so it could have a helpful repr.
     """
     def __call__(self, obj):
         if isinstance(obj, (KeySequence, KeyPress)):
-            print(f"{obj}\nType '<name>.execute()' to perform this action in game.")
+            print(f"{obj}\nType '<name>.execute()' "
+                  f"to perform this action in game.")
         else:
             pydoc.help(obj)
 
@@ -100,11 +107,14 @@ def record(start_delay=5, record_time=None, button_wait=True):
     Press start and select at the same time to stop the recording.
 
     :param start_delay: Time before recording will start (in seconds)
-    :param record_time: Length of time to record for (in seconds), None will record indefinitely.
+    :param record_time: Length of time to record for (in seconds),
+                        None will record indefinitely.
     :param button_wait: Wait for a button input before starting recording
     """
     global base_locals
-    base_locals['recording'] = KeySequence.record(start_delay, record_time, button_wait)
+    base_locals['recording'] = KeySequence.record(start_delay,
+                                                  record_time,
+                                                  button_wait)
     print('Recording stored as `recording`')
 
 
