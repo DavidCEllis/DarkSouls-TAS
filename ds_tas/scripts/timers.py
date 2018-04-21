@@ -93,4 +93,6 @@ def force_quit(tas_engine=tas):
     print(f'IGT Frame: {igt_frame}')
     print(f'Final Frame: {last_frame}')
 
+    print('Call tas.rehook() to reconnect when the game is running.')
+
     return FQFrames(diff, igt, igt_frame, last_frame)
