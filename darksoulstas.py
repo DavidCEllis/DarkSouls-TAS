@@ -12,7 +12,7 @@ from ds_tas import KeySequence, KeyPress, basics
 from ds_tas.scripts import menus, glitches, timers
 from ds_tas.engine import tas
 
-__version__ = '3.0.0'
+__version__ = '3.0.0b1'
 
 # Variable names to skip
 skip_vars = ['sys', 'code', 'copy', 'textwrap',
