@@ -2,11 +2,18 @@ import time
 from contextlib import contextmanager
 
 from .hook import Hook
+from ..exceptions import GameNotRunningError
 
 
 class TAS:
     def __init__(self):
-        self.h = Hook()
+        try:
+            self.h = Hook()
+        except OSError:
+            raise GameNotRunningError(
+                "Could not acquire the TAS Hook. "
+                "Make sure the game is running."
+            )
         self.queue = []
 
     def igt(self):
@@ -15,10 +22,43 @@ class TAS:
 
         :return: In game time in ms(?)
         """
-        return self.h.igt()
+        try:
+            return self.h.igt()
+        except OSError:
+            raise GameNotRunningError(
+                "Could not read IGT from the game. "
+                "Use tas.rehook() to reconnect."
+            )
+
+    def rehook(self):
+        self.h.release()
+        try:
+            self.h.acquire()
+        except OSError:
+            raise GameNotRunningError(
+                "Could not acquire the TAS Hook. "
+                "Make sure the game is running."
+            )
+
+    def check_and_rehook(self):
+        """
+        Check if the game is running, if not try to rehook.
+
+        :return:
+        """
+        try:
+            self.igt()
+        except GameNotRunningError:
+            self.rehook()
 
     def frame_count(self):
-        return self.h.frame_count()
+        try:
+            return self.h.frame_count()
+        except OSError:
+            raise GameNotRunningError(
+                "Could not read frame count from the game. "
+                "Use tas.rehook() to reconnect."
+            )
 
     def clear(self):
         """
@@ -67,10 +107,15 @@ class TAS:
         """
         Give control of the game to the TAS Engine for commands and return control after.
         """
-        self.h.controller(False)
-        self.h.background_input(True)
         try:
+            self.h.controller(False)
+            self.h.background_input(True)
             yield
+        except PermissionError:
+            raise GameNotRunningError(
+                'TAS Hook has lost connection to the game. '
+                'Call tas.rehook() to reconnect.'
+            )
         finally:
             self.h.controller(True)
             self.h.background_input(False)
