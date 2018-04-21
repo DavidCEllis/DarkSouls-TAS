@@ -51,6 +51,9 @@ class TAS:
         except GameNotRunningError:
             self.rehook()
 
+    def force_quit(self):
+        self.h.force_quit()
+
     def frame_count(self):
         try:
             return self.h.frame_count()

@@ -101,9 +101,10 @@ class Hook:
         self.w_handle = FindWindowA(None, b"DARK SOULS")
         self.process_id = DWORD(0)
         GetWindowThreadProcessId(self.w_handle, pointer(self.process_id))
-        # Open process with PROCESS_VM_OPERATION, PROCESS_VM_READ
-        # and PROCESS_VM_WRITE access rights
-        self.handle = OpenProcess(0x8 | 0x10 | 0x20, False, self.process_id)
+        # Open process with PROCESS_TERMINATE, PROCESS_VM_OPERATION,
+        # PROCESS_VM_READ and PROCESS_VM_WRITE access rights
+        flags = 0x1 | 0x8 | 0x10 | 0x20
+        self.handle = OpenProcess(flags, False, self.process_id)
         self.xinput_address = self.get_module_base_address("XINPUT1_3.dll")
         self.debug = self.is_debug()
 
@@ -122,6 +123,14 @@ class Hook:
                 CloseHandle(handle)
             except OSError:
                 pass
+
+    def force_quit(self):
+        result = windll.kernel32.TerminateProcess(self.handle)
+        if result == 0:
+            print('Quit Failed')
+        else:
+            print('Quit Successful.')
+            self.release()
 
     def get_module_base_address(self, module_name):
         lpszModuleName = module_name.encode("ascii")
