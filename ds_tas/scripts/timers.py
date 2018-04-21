@@ -76,15 +76,25 @@ def force_quit(tas_engine=tas):
     last_frame = tas_engine.frame_count()
 
     print("FQ Test started. Quit Dark souls or Ctrl-C to stop.")
+    igt_running = True
     while True:
         try:
             new_igt, new_frame = tas_engine.igt(), tas_engine.frame_count()
             if new_igt and new_igt > igt:
                 igt, igt_frame = new_igt, new_frame
+                if not igt_running:
+                    print('IGT Started')
+                    igt_running = True
+
+            elif new_frame > last_frame + 1 and igt_running:
+                igt_running = False
+                print('IGT Stopped')
+
             last_frame = new_frame
-        except GameNotRunningError:
+
+        except (GameNotRunningError, RuntimeError, OSError):
             break
-        sleep(0.002)
+        sleep(0.01)
 
     diff = last_frame - igt_frame
 
@@ -92,6 +102,7 @@ def force_quit(tas_engine=tas):
     print(f'IGT: {igt}')
     print(f'IGT Frame: {igt_frame}')
     print(f'Final Frame: {last_frame}')
+    print(f'Timer Running: {igt_running}')
 
     print('Call tas.rehook() to reconnect when the game is running.')
 
