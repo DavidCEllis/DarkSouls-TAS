@@ -5,8 +5,6 @@ from collections import namedtuple
 from time import perf_counter, sleep
 from datetime import timedelta
 
-from ..controller import KeyPress
-from ..engine import tas
 from ..exceptions import GameNotRunningError
 
 
@@ -20,7 +18,7 @@ IGTComparison = namedtuple('TimerComparison', 'frames rta igt diff est_diff')
 FQFrames = namedtuple('FQFrames', 'frames igt igt_frame final_frame')
 
 
-def igt_vs_rta(tas_engine=tas):
+def igt_vs_rta(tas_engine):
     """
     Start a timer to compare RTA/IGT and Frame Count
 
@@ -38,7 +36,7 @@ def igt_vs_rta(tas_engine=tas):
     frame_start = tas_engine.frame_count()
     print("Timer Started - Press Start and Select simultaneously to stop.")
     while True:
-        keypress = KeyPress.from_state()
+        keypress = tas_engine.keystate()
         if keypress.start and keypress.back:
             break
         sleep(0.002)
@@ -60,7 +58,7 @@ def igt_vs_rta(tas_engine=tas):
     return IGTComparison(frame_diff, rta_diff, igt_diff, rta_vs_igt, estimate)
 
 
-def force_quit(tas_engine=tas):
+def force_quit(tas_engine):
     """
     Time the frame count after IGT stops when executing a force quit
 
