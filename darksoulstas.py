@@ -10,9 +10,9 @@ import textwrap
 
 from ds_tas import KeySequence, KeyPress, basics
 from ds_tas.scripts import menus, glitches, timers
-from ds_tas.engine import tas
+from ds_tas.engine import TAS
 
-__version__ = '3.0.0b1'
+__version__ = '3.0.0b2'
 
 # Variable names to skip
 skip_vars = ['sys', 'code', 'copy', 'textwrap',
@@ -52,10 +52,10 @@ raw_banner = f"""
     
     eg: running_jump = (run & b) * 30 + run + (run & b) * 2
     
-    When a KeyPress or KeySequence has been built up use .execute() to run it.
+    When a KeyPress or KeySequence has been built up use tas.run(seq) to run it.
     
-    Use help(nameofthing) to see the documentation and functions for that object. 
-    (This will also give internal information)
+    Use help(nameofthing) to see the documentation and functions for that 
+    object. (This will also give internal information)
     
     Please read the readme at 
     https://github.com/DavidCEllis/DarkSouls-TAS/ for examples.
@@ -75,7 +75,7 @@ base_locals['KeyPress'] = KeyPress
 base_locals['menus'] = menus
 base_locals['glitches'] = glitches
 base_locals['timers'] = timers
-base_locals['tas'] = tas
+base_locals['tas'] = TAS()
 
 base_locals['recording'] = basics.select + basics.right + basics.a
 
@@ -112,9 +112,9 @@ def record(start_delay=5, record_time=None, button_wait=True):
     :param button_wait: Wait for a button input before starting recording
     """
     global base_locals
-    base_locals['recording'] = KeySequence.record(start_delay,
-                                                  record_time,
-                                                  button_wait)
+    base_locals['recording'] = base_locals['tas'].record(start_delay,
+                                                         record_time,
+                                                         button_wait)
     print('Recording stored as `recording`')
 
 
@@ -126,7 +126,7 @@ def playback(start_delay=None, igt_wait=False):
     :param igt_wait: wait for IGT to change before playback commenses
     """
     global base_locals
-    base_locals['recording'].execute(start_delay, igt_wait)
+    base_locals['tas'].run(base_locals['recording'], start_delay, igt_wait)
 
 
 def save(filename):
@@ -157,7 +157,7 @@ def tas_console():
     base_locals['save'] = save
     base_locals['load'] = load
 
-    base_locals['igt'] = tas.igt
+    base_locals['igt'] = base_locals['tas'].igt
 
     base_locals['help'] = Helper()
     base_locals['exit'] = sys.exit

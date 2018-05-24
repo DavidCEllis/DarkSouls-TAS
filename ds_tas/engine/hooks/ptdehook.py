@@ -1,4 +1,4 @@
-""" Accessing the memory of dark souls"""
+"""Hook to access the memory of Dark Souls PTDE"""
 from ctypes import (
     windll, WinError, WINFUNCTYPE, POINTER, pointer, Structure, sizeof, cast
 )
@@ -73,7 +73,7 @@ CloseHandle = quick_win_define("Kernel32.CloseHandle",
                                BOOL, HANDLE)
 
 
-class Hook:
+class PTDEHook:
     """
     Hook Dark Souls
 

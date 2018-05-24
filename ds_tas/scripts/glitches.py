@@ -20,7 +20,6 @@ from .menus import joy
 
 from ..basics import *
 from ..controller import KeyPress, KeySequence
-from ..engine import tas
 from ..exceptions import GameNotRunningError
 
 __all__ = [
@@ -30,6 +29,7 @@ __all__ = [
     'itemswap',
     'framedupe',
     'joy_moveswap',
+    'poopwalk',
 ]
 
 
@@ -124,12 +124,12 @@ def framedupe(dupes):
         return onedupe + (dupes - 1) * extradupe
 
 
-def force_quit(delay_frames=0, tas_engine=tas):
+def force_quit(tas_engine, delay_frames=0):
     """
     Force quit the game after IGT pauses and resumes.
 
-    :param delay_frames: additional frames to wait after IGT starts.
     :param tas_engine: Engine for force quit glitch
+    :param delay_frames: additional frames to wait after IGT starts.
     """
     igt, igt_frame = tas_engine.igt(), tas_engine.frame_count()
     last_frame = tas_engine.frame_count()
@@ -147,7 +147,7 @@ def force_quit(delay_frames=0, tas_engine=tas):
                         print('IGT Started')
                     if frame_wait >= delay_frames:
                         print('Force Quitting')
-                        tas.h.force_quit()
+                        tas_engine.h.force_quit()
                         break
                     frame_wait += 1
                 igt, igt_frame = new_igt, new_frame
@@ -162,5 +162,7 @@ def force_quit(delay_frames=0, tas_engine=tas):
             break
         sleep(0.01)
 
+
+poopwalk = l1 + waitfor(12) + l2
 
 joy_moveswap = joy + waitfor(100) + moveswap()

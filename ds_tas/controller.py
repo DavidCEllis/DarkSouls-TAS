@@ -6,12 +6,8 @@ necessary for recording and playing back inputs.
 """
 
 import json
-import time
 from copy import copy
 from itertools import chain
-
-from .engine import tas
-from .util import largest_val
 
 __all__ = [
     'controller_keys',
@@ -188,10 +184,10 @@ class KeyPress:
             y=max(self.y, other.y),
             l2=max(self.l2, other.l2),
             r2=max(self.r2, other.r2),
-            l_thumb_x=largest_val(self.l_thumb_x, other.l_thumb_x),
-            l_thumb_y=largest_val(self.l_thumb_y, other.l_thumb_y),
-            r_thumb_x=largest_val(self.r_thumb_x, other.r_thumb_x),
-            r_thumb_y=largest_val(self.r_thumb_y, other.r_thumb_y),
+            l_thumb_x=max(self.l_thumb_x, other.l_thumb_x, key=abs),
+            l_thumb_y=max(self.l_thumb_y, other.l_thumb_y, key=abs),
+            r_thumb_x=max(self.r_thumb_x, other.r_thumb_x, key=abs),
+            r_thumb_y=max(self.r_thumb_y, other.r_thumb_y, key=abs),
         )
 
     def __len__(self):
@@ -215,11 +211,6 @@ class KeyPress:
             frames=1,
             **key_values
         )
-
-    @classmethod
-    def from_state(cls, tas_instance=tas):
-        state = tas_instance.h.read_input()
-        return cls.from_list(state)
 
     @property
     def keylist(self):
@@ -269,11 +260,6 @@ class KeyPress:
             self.y
         ]))
 
-    def execute(self, igt_wait=True, tas_instance=tas):
-        tas_instance.clear()
-        tas_instance.push(self.keylist)
-        tas_instance.execute(igt_wait=igt_wait)
-
 
 class KeySequence:
     """
@@ -322,13 +308,11 @@ class KeySequence:
 
     def __len__(self):
         """
-        Return the number of frames in the sequence.
+        Return the number of steps in the keyseq
 
-        Alias of .framecount
-
-        :return: framecount
+        :return: Number of steps in the keysequence
         """
-        return self.framecount
+        return len(self._sequence)
 
     def __mul__(self, other):
         """
@@ -362,36 +346,6 @@ class KeySequence:
     @property
     def keylist(self):
         return list(chain.from_iterable(item.keylist for item in self._sequence))
-
-    def execute(self, start_delay=None, igt_wait=True, display=True, tas_instance=tas):
-        """
-        Queue up and execute a series of controller commands
-
-        :param start_delay: Delay before execution starts in seconds
-        :param igt_wait: Wait for IGT to tick before performing the first input
-        :param display: Display the game inputs as they are pressed
-        :param tas_instance: TAS Engine for command execution
-        """
-        if self._sequence:
-            if start_delay:
-                print(f'Delaying start by {start_delay} seconds')
-                if start_delay >= 5:
-                    time.sleep(start_delay - 5)
-                    for i in range(5, 0, -1):
-                        print(f'{i}')
-                        time.sleep(1)
-                else:
-                    time.sleep(start_delay)
-            print('Executing sequence')
-            tas_instance.clear()
-            tas_instance.push(self.keylist)
-            if display:
-                tas_instance.execute(igt_wait=igt_wait, side_effect=_print_press)
-            else:
-                tas_instance.execute(igt_wait=igt_wait, side_effect=None)
-            print('Sequence executed')
-        else:
-            print('No sequence defined')
 
     def append(self, keypress):
         self._sequence.append(keypress)
@@ -462,81 +416,8 @@ class KeySequence:
         instance = cls([KeyPress.from_list(state) for state in states])
         return instance
 
-    @classmethod
-    def record(cls, start_delay=5, record_time=None, button_wait=True, tas_instance=tas):
-        """
-        Record the inputs for a time or infinitely
 
-        Exit out and save by pressing start and select/back at the same time.
-
-        use:
-            >>> seq = KeySequence.record(start_delay=10)
-
-        playback:
-            >>> seq.execute(start_delay=10)
-
-        :param start_delay: Delay before recording starts in seconds
-        :param record_time: Recording time
-        :param button_wait: Wait for a button press to start recording
-        :param tas_instance:
-        :return: recorded tas data
-        """
-        print(f'Preparing to record in {start_delay} seconds')
-        recording_data = []
-        igt_diffs = set()
-
-        if start_delay is None:
-            start_delay = 0
-
-        if start_delay >= 5:
-            time.sleep(start_delay - 5)
-            print('Countdown')
-            for i in range(5, 0, -1):
-                print(f'{i}')
-                time.sleep(1)
-        else:
-            time.sleep(start_delay)
-
-        print('Recording Started')
-        start_time = time.clock()
-        end_time = start_time + record_time if record_time else None
-        first_input = True
-
-        # Special code for waiting for first input
-        if first_input and button_wait:
-            print('Waiting for input')
-            keypress = tas_instance.h.read_input()
-            while not sum(keypress[4:6] + keypress[10:14]):
-                time.sleep(0.002)
-                keypress = tas_instance.h.read_input()
-            print('Recording Resumed')
-
-        while True:
-            keypress = tas_instance.h.read_input()
-            # Exit if start and select are held down
-            if keypress[4] and keypress[5]:
-                break
-            recording_data.append(keypress)
-
-            igt = tas_instance.h.igt()
-            # Wait until next igt time
-            while igt == tas_instance.h.igt():
-                time.sleep(0.002)
-            igt_diffs.add(tas_instance.h.igt() - igt)
-
-            # Check if record time complete
-            if end_time and time.clock() > end_time:
-                break
-
-        print('Recording Finished')
-        print(f'Frame Lengths: {sorted(igt_diffs)}')
-
-        recording = cls.from_list(recording_data)
-
-        return recording
-
-
-def _print_press(keylist, print_wait=False):
+def print_press(keylist, print_wait=False):
     """
     Method to print keypresses as KeyPress given individual list inputs.
 

@@ -1,14 +1,15 @@
 import time
 from contextlib import contextmanager
 
-from .hook import Hook
+from ds_tas.engine.hooks import PTDEHook
+from ..controller import KeyPress, KeySequence, print_press
 from ..exceptions import GameNotRunningError
 
 
 class TAS:
     def __init__(self):
         try:
-            self.h = Hook()
+            self.h = PTDEHook()
         except OSError:
             raise GameNotRunningError(
                 "Could not acquire the TAS Hook. "
@@ -63,13 +64,32 @@ class TAS:
                 "Use tas.rehook() to reconnect."
             )
 
-    def clear(self):
+    @contextmanager
+    def tas_control(self):
+        """
+        Give control of the game to the TAS Engine for commands
+        and return control after.
+        """
+        try:
+            self.h.controller(False)
+            self.h.background_input(True)
+            yield
+        except PermissionError:
+            raise GameNotRunningError(
+                'TAS Hook has lost connection to the game. '
+                'Call tas.rehook() to reconnect.'
+            )
+        finally:
+            self.h.controller(True)
+            self.h.background_input(False)
+
+    def _clear(self):
         """
         Clear the keypress queue
         """
         self.queue.clear()
 
-    def push(self, i):
+    def _push(self, i):
         """
         Add an input to the queue
         Expects a list of 20 integers.
@@ -105,25 +125,7 @@ class TAS:
         else:
             raise ValueError(f'Invalid Input: {i}')
 
-    @contextmanager
-    def tas_control(self):
-        """
-        Give control of the game to the TAS Engine for commands and return control after.
-        """
-        try:
-            self.h.controller(False)
-            self.h.background_input(True)
-            yield
-        except PermissionError:
-            raise GameNotRunningError(
-                'TAS Hook has lost connection to the game. '
-                'Call tas.rehook() to reconnect.'
-            )
-        finally:
-            self.h.controller(True)
-            self.h.background_input(False)
-
-    def execute(self, igt_wait=True, side_effect=None):
+    def _execute(self, igt_wait=True, side_effect=None):
         """
         Execute the sequence of commands that have been pushed
         to the TAS object
@@ -154,5 +156,111 @@ class TAS:
                     time.sleep(0.002)
             self.queue.clear()
 
+    def keystate(self):
+        """
+        Get the current input state as a keypress
+        :return:
+        """
+        state = self.h.read_input()
+        return KeyPress.from_list(state)
 
-tas = TAS()
+    def record(self, start_delay=5, record_time=None, button_wait=True):
+        """
+        Record the inputs for a time or indefinitely
+
+        Exit out and save by pressing start and select/back at the same time.
+
+        use:
+            >>> tas = TAS()
+            >>> seq = tas.record(start_delay=10)
+
+        playback:
+            >>> tas.run(seq, start_delay=10)
+
+        :param start_delay: Delay before recording starts in seconds
+        :param record_time: Recording time
+        :param button_wait: Wait for a button press to start recording
+        :return: recorded tas data
+        """
+        print(f'Preparing to record in {start_delay} seconds')
+        recording_data = []
+        igt_diffs = set()
+
+        if start_delay is None:
+            start_delay = 0
+
+        if start_delay >= 5:
+            time.sleep(start_delay - 5)
+            print('Countdown')
+            for i in range(5, 0, -1):
+                print(f'{i}')
+                time.sleep(1)
+        else:
+            time.sleep(start_delay)
+
+        print('Recording Started')
+        start_time = time.clock()
+        end_time = start_time + record_time if record_time else None
+        first_input = True
+
+        # Special code for waiting for first input
+        if first_input and button_wait:
+            print('Waiting for input')
+            keypress = self.h.read_input()
+            while not sum(keypress[4:6] + keypress[10:14]):
+                time.sleep(0.002)
+                keypress = self.h.read_input()
+            print('Recording Resumed')
+
+        while True:
+            keypress = self.h.read_input()
+            # Exit if start and select are held down
+            if keypress[4] and keypress[5]:
+                break
+            recording_data.append(keypress)
+
+            igt = self.h.igt()
+            # Wait until next igt time
+            while igt == self.h.igt():
+                time.sleep(0.002)
+            igt_diffs.add(self.h.igt() - igt)
+
+            # Check if record time complete
+            if end_time and time.clock() > end_time:
+                break
+
+        print('Recording Finished')
+        print(f'Frame Lengths: {sorted(igt_diffs)}')
+
+        recording = KeySequence.from_list(recording_data)
+
+        return recording
+
+    def run(self, keyseq, start_delay=None, igt_wait=True, display=True):
+        """
+        Queue up and execute a series of controller commands
+
+        :param keyseq: KeySequence or KeyPress of inputs to execute
+        :param start_delay: Delay before execution starts in seconds
+        :param igt_wait: Wait for IGT to tick before performing the first input
+        :param display: Display the game inputs as they are pressed
+        """
+        if len(keyseq) > 0:
+            effect = print_press if display else None
+            if start_delay:
+                print(f'Delaying start by {start_delay} seconds')
+                if start_delay >= 5:
+                    time.sleep(start_delay - 5)
+                    for i in range(5, 0, -1):
+                        print(f'{i}')
+                        time.sleep(1)
+                else:
+                    time.sleep(start_delay)
+
+            print('Executing sequence')
+            self._clear()
+            self._push(keyseq.keylist)
+            self._execute(igt_wait=igt_wait, side_effect=effect)
+            print('Sequence executed')
+        else:
+            print('No Sequence Defined')
