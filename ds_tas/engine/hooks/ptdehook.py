@@ -1,10 +1,9 @@
 """Hook to access the memory of Dark Souls PTDE"""
 from ctypes import (
-    windll, WinError, WINFUNCTYPE, POINTER, pointer, Structure, sizeof, cast
+    windll, POINTER, pointer, Structure, sizeof, cast
 )
 from ctypes.wintypes import (
-    BOOL, BYTE, CHAR, DWORD, HANDLE, HMODULE,
-    HWND, LPCSTR, LPCVOID, LPDWORD, LPVOID, SIZE
+    BYTE, CHAR, DWORD, HMODULE, LPVOID, SIZE
 )
 
 
@@ -19,58 +18,6 @@ class MODULEENTRY32(Structure):
                 ("hModule", HMODULE),
                 ("szModule", CHAR*256),
                 ("szExePath", CHAR*260)]
-
-
-# def err_on_zero_or_null_check(result, func, args):
-#     if not result:
-#         raise WinError()
-#     return args
-#
-#
-# def quick_win_define(name, output, *args, **kwargs):
-#     dllname, fname = name.split('.')
-#     params = kwargs.get('params', None)
-#     if params:
-#         params = tuple((x, ) for x in params)
-#     prototype = WINFUNCTYPE(output, *args)
-#     func = prototype((fname, getattr(windll, dllname)), params)
-#     err = kwargs.get('err', err_on_zero_or_null_check)
-#     if err:
-#         func.errcheck = err
-#
-#     def ret(*args2):
-#         return output(func(*args2))
-#     return ret
-#
-#
-# ReadProcessMemory = quick_win_define("Kernel32.ReadProcessMemory",
-#                                      BOOL, HANDLE, LPCVOID, LPVOID,
-#                                      SIZE, POINTER(SIZE))
-#
-# WriteProcessMemory = quick_win_define("Kernel32.WriteProcessMemory",
-#                                       BOOL, HANDLE, LPVOID, LPCVOID,
-#                                       SIZE, POINTER(SIZE))
-#
-# FindWindowA = quick_win_define("User32.FindWindowA",
-#                                HWND, LPCSTR, LPCSTR)
-#
-# GetWindowThreadProcessId = quick_win_define("User32.GetWindowThreadProcessId",
-#                                             DWORD, HWND, LPDWORD)
-#
-# OpenProcess = quick_win_define("Kernel32.OpenProcess",
-#                                HANDLE, DWORD, BOOL, DWORD)
-#
-# CreateToolhelp32Snapshot = quick_win_define("Kernel32.CreateToolhelp32Snapshot",
-#                                             HANDLE, DWORD, DWORD)
-#
-# Module32First = quick_win_define("Kernel32.Module32First",
-#                                  BOOL, HANDLE, POINTER(MODULEENTRY32))
-#
-# Module32Next = quick_win_define("Kernel32.Module32Next",
-#                                 BOOL, HANDLE, POINTER(MODULEENTRY32))
-#
-# CloseHandle = quick_win_define("Kernel32.CloseHandle",
-#                                BOOL, HANDLE)
 
 
 kernel32 = windll.kernel32
