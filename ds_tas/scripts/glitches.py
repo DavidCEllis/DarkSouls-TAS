@@ -1,10 +1,12 @@
 """
 Glitches
 
-Note that these are defined for a 30FPS framerate - these will not work at 60fps.
+Note that these are defined for a 30FPS framerate PTDE.
+These will not work at 60fps.
 
 Available Sequences:
-    joy_moveswap - performs the Joy animation and moveswaps to the weapon below the bow (assumes the weapon is too heavy)
+    joy_moveswap - performs the Joy animation and moveswaps to the weapon below
+                   the bow (assumes the weapon is too heavy)
 
 Available Functions:
     moveswap - Basic moveswap command sequence (to be performed mid animation)
@@ -14,10 +16,13 @@ Available Functions:
     framedupe - perform the frame perfect soul dupe.
 """
 
-from ds_tas.basics import *
-from .menus import joy
-from ..controller import KeyPress, KeySequence
+from time import sleep
 
+from .menus import joy
+
+from ..basics import *
+from ..controller import KeyPress, KeySequence
+from ..exceptions import GameNotRunningError
 
 __all__ = [
     'moveswap',
@@ -26,6 +31,7 @@ __all__ = [
     'itemswap',
     'framedupe',
     'joy_moveswap',
+    'poopwalk',
 ]
 
 
@@ -119,5 +125,46 @@ def framedupe(dupes):
     elif dupes > 1:
         return onedupe + (dupes - 1) * extradupe
 
+
+def force_quit(tas_engine, delay_frames=0):
+    """
+    Force quit the game after IGT pauses and resumes.
+
+    :param tas_engine: Engine for force quit glitch
+    :param delay_frames: additional frames to wait after IGT starts.
+    """
+    igt, igt_frame = tas_engine.igt(), tas_engine.frame_count()
+    last_frame = tas_engine.frame_count()
+
+    frame_wait = 0
+
+    print("FQ Test started. Quit Dark souls or Ctrl-C to stop.")
+    igt_running = True
+    while True:
+        try:
+            new_igt, new_frame = tas_engine.igt(), tas_engine.frame_count()
+            if new_igt and new_igt > igt:
+                if not igt_running:
+                    if frame_wait == 0:
+                        print('IGT Started')
+                    if frame_wait >= delay_frames:
+                        print('Force Quitting')
+                        tas_engine.h.force_quit()
+                        break
+                    frame_wait += 1
+                igt, igt_frame = new_igt, new_frame
+
+            elif new_frame > last_frame + 1 and igt_running:
+                igt_running = False
+                print('IGT Stopped')
+
+            last_frame = new_frame
+
+        except (GameNotRunningError, RuntimeError, OSError):
+            break
+        sleep(0.01)
+
+
+poopwalk = l1 + waitfor(12) + l2
 
 joy_moveswap = joy + waitfor(100) + moveswap()

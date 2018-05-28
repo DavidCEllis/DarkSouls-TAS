@@ -77,4 +77,6 @@ bonfire_run = KeySequence([
 ])
 
 if __name__ == '__main__':
-    bonfire_run.execute(igt_wait=False)
+    from ds_tas.engine import TAS
+    tas = TAS()
+    tas.run(bonfire_run, igt_wait=False)

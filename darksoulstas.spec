@@ -5,7 +5,6 @@ block_cipher = None
 
 a = Analysis(['darksoulstas.py'],
              pathex=['C:\\Users\\David\\source\\repos\\DarkSouls-TAS'],
-             binaries=[('ds_tas/lib/taslib.dll', 'ds_tas/lib')],
              datas=[],
              hiddenimports=[],
              hookspath=[],

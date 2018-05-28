@@ -18,14 +18,16 @@ TAS run at the moment.
 ## Quick Preset Examples ##
 
 ```python3
+>>> from ds_tas.engine import TAS
 >>> from ds_tas.basics import *
 >>> from ds_tas.scripts import glitches, menus
+>>> tas = TAS()
 >>> wave = select + right + a
->>> wave.execute()
+>>> tas.run(wave)
 >>>
->>> glitches.roll_moveswap().execute()
+>>> tas.run(glitches.roll_moveswap)
 >>>
->>> menus.quitout.execute()
+>>> tas.run(menus.quitout)
 ```
 
 ## Basic Movement Keypresses ##
@@ -63,18 +65,20 @@ s_aim_up, s_aim_down, s_aim_left, s_aim_right
 `sprint` is also defined, but if done for a small number of frames will
 instead perform a roll.
 
-To execute any of these keypresses you can simply type the name and
-`.execute()` into the python window after importing them.
+To execute any of these keypresses you can simply type
+`.tas.run(name)` into the python window after importing them.
 
 For Example opening the menu and selecting things (while in game):
 ```python3
+>>> from ds_tas.engine import TAS
 >>> from ds_tas.basics import *
 >>>
+>>> tas = TAS()
 >>> # Open the menu and move left and right and close it again
->>> start.execute()
->>> right.execute()
->>> left.execute()
->>> start.execute()
+>>> tas.run(start)
+>>> tas.run(right)
+>>> tas.run(left)
+>>> tas.run(start)
 ```
 
 If you simply type one of these without .execute() in you will see
@@ -118,6 +122,8 @@ register.
 
 ```python
 >>> from ds_tas.basics import *
+>>> from ds_tas.engine import TAS
+>>> tas = TAS()
 >>>
 >>> # Start menu with delay
 >>> start_menu = start + (wait * 5)
@@ -133,7 +139,7 @@ KeySequence([
     KeyPress(frames=1, a=1)
 ])
 >>> swap_lh_weapon = inventory_menu + wait + down + a + (wait * 2) + up + a
->>> swap_lh_weapon.execute()  # Actually swap weapons
+>>> tas.run(swap_lh_weapon)  # Actually swap weapons
 ```
 
 These commands can also be combined by creating a list and passing
@@ -162,13 +168,13 @@ the `glitches.py` and `menus.py` in the scripts folder.
 
 Record on first button press (wait for the counter then load a save):
 ```python
->>> recording = KeySequence.record(start_delay=10, button_wait=True)
+>>> recording = tas.record(start_delay=10, button_wait=True)
 ```
 
 Reload the savefile and highlight the save then execute the commands,
 skip the wait for IGT to change so it can open the save:
 ```python
->>> recording.execute(igt_wait=False)
+>>> tas.run(recording, igt_wait=False)
 ```
 
 Save the recording:
@@ -209,10 +215,11 @@ Execute the commands and then make sure dark souls is active before the countdow
 Setting igt_wait to False makes the playback execute the first command before waiting for IGT to change.
 
 ```python
+>>> from ds_tas.engine import TAS
 >>> from ds_tas.controller import KeySequence
->>>
+>>> tas = TAS()
 >>> playback = KeySequence.from_file('demos/asylum_run.txt')
->>> playback.execute(start_delay=10, igt_wait=False)
+>>> tas.run(playback, start_delay=10, igt_wait=False)
 ```
 
 If you're really lucky it looks like this: https://youtu.be/gf_ApkcKt6I

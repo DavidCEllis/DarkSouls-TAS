@@ -17,11 +17,11 @@ TAS run at the moment.
 
 ```python
 TAS>>> wave = select + right + a
-TAS>>> wave.execute()
+TAS>>> tas.run(wave)
 TAS>>>
-TAS>>> glitches.roll_moveswap().execute()
+TAS>>> tas.run(glitches.roll_moveswap())
 TAS>>>
-TAS>>> menus.quitout.execute()
+TAS>>> tas.run(menus.quitout)
 ```
 
 ## Basic Movement Keypresses ##
@@ -59,16 +59,16 @@ s_aim_up, s_aim_down, s_aim_left, s_aim_right
 `sprint` is also defined, but if done for a small number of frames will
 instead perform a roll.
 
-To execute any of these keypresses you can simply type the name and
-`.execute()` into the python window after importing them.
+To execute any of these keypresses you can simply call tas.run on them
+`tas.run(name)` into the python window after importing them.
 
 For Example opening the menu and selecting things (while in game):
 ```python
 TAS>>> # Open the menu and move left and right and close it again
-TAS>>> start.execute()
-TAS>>> right.execute()
-TAS>>> left.execute()
-TAS>>> start.execute()
+TAS>>> tas.run(start)
+TAS>>> tas.run(right)
+TAS>>> tas.run(left)
+TAS>>> tas.run(start)
 ```
 
 If you simply type one of these without .execute() in you will see
@@ -125,7 +125,7 @@ KeySequence([
     KeyPress(frames=1, a=1)
 ])
 TAS>>> swap_lh_weapon = inventory_menu + wait + down + a + (wait * 2) + up + a
-TAS>>> swap_lh_weapon.execute()  # Actually swap weapons
+TAS>>> tas.run(swap_lh_weapon)  # Actually swap weapons
 ```
 
 These commands can also be combined by creating a list and passing
