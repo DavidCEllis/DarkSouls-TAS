@@ -20,9 +20,9 @@ from time import sleep
 
 from .menus import joy
 
-from ..basics import *
-from ..controller import KeyPress, KeySequence
-from ..exceptions import GameNotRunningError
+from ds_tas.basics import *
+from ds_tas.controller import KeyPress, KeySequence
+from ds_tas.exceptions import GameNotRunningError
 
 __all__ = [
     'moveswap',

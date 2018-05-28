@@ -10,7 +10,7 @@ it should make it to the bonfire.
 
 from ds_tas.basics import *
 from ds_tas.controller import KeySequence
-from ds_tas.scripts.menus import quitout, joy
+from ds_tas.scripts.ptde.menus import quitout, joy
 
 bonfire_run = KeySequence([
     # Open Savefile
