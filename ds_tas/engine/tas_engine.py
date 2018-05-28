@@ -14,19 +14,19 @@ class TAS:
     Initialise with a hook to work with remaster - creating with no
     arguments will attempt to create a hook to Dark Souls PTDE.
 
-    :param hook: TAS Hook into the game.
+    :param hook: TAS Hook type to hook into the game.
     """
     def __init__(self, hook=None):
         if hook is None:
-            try:
-                self.h = PTDEHook()
-            except OSError:
-                raise GameNotRunningError(
-                    "Could not acquire the TAS Hook. "
-                    "Make sure the game is running."
-                )
-        else:
-            self.h = hook
+            hook = PTDEHook
+
+        try:
+            self.h = hook()
+        except OSError:
+            raise GameNotRunningError(
+                "Could not acquire the TAS Hook. "
+                "Make sure the game is running."
+            )
         self.queue = []
 
     def igt(self):
