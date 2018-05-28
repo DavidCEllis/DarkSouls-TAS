@@ -7,14 +7,26 @@ from ..exceptions import GameNotRunningError
 
 
 class TAS:
-    def __init__(self):
-        try:
-            self.h = PTDEHook()
-        except OSError:
-            raise GameNotRunningError(
-                "Could not acquire the TAS Hook. "
-                "Make sure the game is running."
-            )
+    """
+    The high level TAS engine - provides more user friendly functions
+    than working directly with the hook.
+
+    Initialise with a hook to work with remaster - creating with no
+    arguments will attempt to create a hook to Dark Souls PTDE.
+
+    :param hook: TAS Hook into the game.
+    """
+    def __init__(self, hook=None):
+        if hook is None:
+            try:
+                self.h = PTDEHook()
+            except OSError:
+                raise GameNotRunningError(
+                    "Could not acquire the TAS Hook. "
+                    "Make sure the game is running."
+                )
+        else:
+            self.h = hook
         self.queue = []
 
     def igt(self):
