@@ -6,6 +6,8 @@ from ctypes.wintypes import (
     BYTE, CHAR, DWORD, HMODULE, LPVOID, SIZE
 )
 
+from ds_tas.exceptions import GameNotRunningError
+
 
 class MODULEENTRY32(Structure):
     _fields_ = [("dwSize", DWORD),
@@ -20,28 +22,31 @@ class MODULEENTRY32(Structure):
                 ("szExePath", CHAR*260)]
 
 
-kernel32 = windll.kernel32
-user32 = windll.user32
+# Short aliases for kernel32 and user32 functions
+ReadProcessMemory = windll.kernel32.ReadProcessMemory
+WriteProcessMemory = windll.kernel32.WriteProcessMemory
+OpenProcess = windll.kernel32.OpenProcess
+CreateToolhelp32Snapshot = windll.kernel32.CreateToolhelp32Snapshot
+Module32First = windll.kernel32.Module32First
+Module32Next = windll.kernel32.Module32Next
+CloseHandle = windll.kernel32.CloseHandle
+TerminateProcess = windll.kernel32.TerminateProcess
 
-ReadProcessMemory = kernel32.ReadProcessMemory
-WriteProcessMemory = kernel32.WriteProcessMemory
-OpenProcess = kernel32.OpenProcess
-CreateToolhelp32Snapshot = kernel32.CreateToolhelp32Snapshot
-Module32First = kernel32.Module32First
-Module32Next = kernel32.Module32Next
-CloseHandle = kernel32.CloseHandle
-TerminateProcess = kernel32.TerminateProcess
-
-FindWindowA = user32.FindWindowA
-GetWindowThreadProcessId = user32.GetWindowThreadProcessId
+FindWindowW = windll.user32.FindWindowA
+GetWindowThreadProcessId = windll.user32.GetWindowThreadProcessId
 
 
-class PTDEHook:
+class BaseHook:
+    WINDOW_NAME = ''
+
+
+class PTDEHook(BaseHook):
     """
-    Hook Dark Souls
+    Hook Dark Souls: Prepare To Die Edition
 
     Provides functions to read and write the memory of dark souls
     """
+    WINDOW_NAME = "DARK SOULS"
 
     def __init__(self):
         # Declare instance variables
@@ -61,7 +66,13 @@ class PTDEHook:
         """
         Acquire a hook into the game window.
         """
-        self.w_handle = FindWindowA(None, b"DARK SOULS")
+        self.w_handle = FindWindowW(None, self.WINDOW_NAME)
+        # Error if game not found
+        if self.w_handle == 0:
+            raise GameNotRunningError(f"Could not find the {self.WINDOW_NAME} "
+                                      f"game window. "
+                                      f"Make sure the game is running.")
+
         self.process_id = DWORD(0)
         GetWindowThreadProcessId(self.w_handle, pointer(self.process_id))
         # Open process with PROCESS_TERMINATE, PROCESS_VM_OPERATION,
@@ -75,7 +86,6 @@ class PTDEHook:
         """
         Release the hooks
         """
-
         if not (self.handle or self.w_handle):
             return
 
@@ -304,3 +314,7 @@ class PTDEHook:
             raise RuntimeError("Couldn't find the pointer to the frame count")
         ptr += 0x58
         return self.read_int(ptr, 4)
+
+
+class RemasterHook(BaseHook):
+    WINDOW_NAME = 'DARK SOULS\u2122: REMASTERED'
