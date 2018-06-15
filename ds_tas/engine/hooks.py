@@ -1,4 +1,6 @@
-"""Hook to access the memory of Dark Souls PTDE"""
+"""Hook to access the memory of Dark Souls"""
+from abc import ABC, abstractmethod
+
 from ctypes import (
     windll, POINTER, pointer, Structure, sizeof, cast
 )
@@ -36,8 +38,85 @@ FindWindowW = windll.user32.FindWindowA
 GetWindowThreadProcessId = windll.user32.GetWindowThreadProcessId
 
 
-class BaseHook:
+class BaseHook(ABC):
+    """
+    Abstract class for all of the required methods needed for
+    a game hook.
+    """
     WINDOW_NAME = ''
+
+    def __init__(self):
+        self.w_handle = None
+        self.w_handle = None
+        self.process_id = None
+        self.handle = None
+        self.xinput_address = None
+
+        # Actually get the hook
+        self.acquire()
+
+    def __del__(self):
+        self.release()
+
+    @abstractmethod
+    def acquire(self):
+        pass
+
+    @abstractmethod
+    def release(self):
+        pass
+
+    @abstractmethod
+    def igt(self):
+        """
+        Get the in game time in milliseconds.
+
+        :return: game time in ms
+        """
+        pass
+
+    @abstractmethod
+    def frame_count(self):
+        pass
+
+    @abstractmethod
+    def controller(self, state):
+        """
+        Enable or disable the controller
+
+        :param state: True to enable, False to disable
+        :return: None
+        """
+
+    @abstractmethod
+    def background_input(self, state):
+        """
+        Enable or disable input while the game is in the background
+
+        :param state: True to enable, False to disable
+        :return: None
+        """
+
+    def rehook(self):
+        self.release()
+        try:
+            self.acquire()
+        except OSError:
+            raise GameNotRunningError(
+                f"Could not acquire the TAS Hook to {self.WINDOW_NAME}. "
+                "Make sure the game is running."
+            )
+
+    def check_and_rehook(self):
+        """
+        Check if the game is running, if not try to rehook.
+
+        :return:
+        """
+        try:
+            self.igt()
+        except GameNotRunningError:
+            self.rehook()
 
 
 class PTDEHook(BaseHook):
@@ -49,18 +128,8 @@ class PTDEHook(BaseHook):
     WINDOW_NAME = "DARK SOULS"
 
     def __init__(self):
-        # Declare instance variables
-        self.w_handle = None
-        self.process_id = None
-        self.handle = None
-        self.xinput_address = None
         self.debug = False
-
-        # Actually get the hook
-        self.acquire()
-
-    def __del__(self):
-        self.release()
+        super().__init__()
 
     def acquire(self):
         """
@@ -292,7 +361,14 @@ class PTDEHook(BaseHook):
             ptr = 0x137C8C0
         else:
             ptr = 0x1378700
-        ptr = self.read_int(ptr, 4)
+        try:
+            ptr = self.read_int(ptr, 4)
+        except OSError:
+            raise GameNotRunningError(
+                "Could not read IGT from the game. "
+                "Use tas.rehook() to reconnect."
+            )
+
         if ptr == 0:
             raise RuntimeError("Couldn't find the pointer to IGT")
         ptr += 0x68
@@ -309,7 +385,13 @@ class PTDEHook(BaseHook):
             ptr = 0x137C7C4
         else:
             ptr = 0x1378604
-        ptr = self.read_int(ptr, 4)
+        try:
+            ptr = self.read_int(ptr, 4)
+        except OSError:
+            raise GameNotRunningError(
+                "Could not read frame count from the game. "
+                "Use tas.rehook() to reconnect."
+            )
         if ptr == 0:
             raise RuntimeError("Couldn't find the pointer to the frame count")
         ptr += 0x58
@@ -318,3 +400,25 @@ class PTDEHook(BaseHook):
 
 class RemasterHook(BaseHook):
     WINDOW_NAME = 'DARK SOULS\u2122: REMASTERED'
+
+    def __init__(self):
+        super().__init__()
+        raise NotImplementedError('Remastered TAS not yet implemented.')
+
+    def acquire(self):
+        return NotImplemented
+
+    def release(self):
+        return NotImplemented
+
+    def igt(self):
+        return NotImplemented
+
+    def frame_count(self):
+        return NotImplemented
+
+    def controller(self, state):
+        return NotImplemented
+
+    def background_input(self, state):
+        return NotImplemented

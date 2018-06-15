@@ -11,6 +11,9 @@ class TAS:
     The high level TAS engine - provides more user friendly functions
     than working directly with the hook.
 
+    This class handles the keypresses and sequences and the command
+    queue.
+
     Initialise with a hook to work with remaster - creating with no
     arguments will attempt to create a hook to Dark Souls PTDE.
 
@@ -20,13 +23,7 @@ class TAS:
         if hook is None:
             hook = PTDEHook
 
-        try:
-            self.h = hook()
-        except OSError:
-            raise GameNotRunningError(
-                "Could not acquire the TAS Hook. "
-                "Make sure the game is running."
-            )
+        self.h = hook()
         self.queue = []
 
     def igt(self):
@@ -35,23 +32,15 @@ class TAS:
 
         :return: In game time in ms(?)
         """
-        try:
-            return self.h.igt()
-        except OSError:
-            raise GameNotRunningError(
-                "Could not read IGT from the game. "
-                "Use tas.rehook() to reconnect."
-            )
+        return self.h.igt()
 
     def rehook(self):
-        self.h.release()
-        try:
-            self.h.acquire()
-        except OSError:
-            raise GameNotRunningError(
-                "Could not acquire the TAS Hook. "
-                "Make sure the game is running."
-            )
+        """
+        Make the TAS Hook reconnect
+
+        :return:
+        """
+        self.h.rehook()
 
     def check_and_rehook(self):
         """
@@ -59,22 +48,13 @@ class TAS:
 
         :return:
         """
-        try:
-            self.igt()
-        except GameNotRunningError:
-            self.rehook()
+        self.h.check_and_rehook()
 
     def force_quit(self):
         self.h.force_quit()
 
     def frame_count(self):
-        try:
-            return self.h.frame_count()
-        except OSError:
-            raise GameNotRunningError(
-                "Could not read frame count from the game. "
-                "Use tas.rehook() to reconnect."
-            )
+        return self.h.frame_count()
 
     @contextmanager
     def tas_control(self):
