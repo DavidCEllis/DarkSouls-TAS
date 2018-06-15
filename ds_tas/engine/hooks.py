@@ -34,7 +34,7 @@ Module32Next = windll.kernel32.Module32Next
 CloseHandle = windll.kernel32.CloseHandle
 TerminateProcess = windll.kernel32.TerminateProcess
 
-FindWindowW = windll.user32.FindWindowA
+FindWindowW = windll.user32.FindWindowW
 GetWindowThreadProcessId = windll.user32.GetWindowThreadProcessId
 
 
