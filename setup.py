@@ -30,8 +30,5 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.6',
     ],
-    package_data={  # Include the compiled dll
-        '': ['lib/taslib.dll'],
-    },
     cmdclass={'bdist_wheel': platform_bdist_wheel}
 )
