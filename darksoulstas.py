@@ -31,7 +31,7 @@ raw_banner = f"""
         s_aim_up, s_aim_down, s_aim_left, s_aim_right
         
     Basic Functions:
-        waitfor, walkfor, runfor, sprintfor, igt, timers
+        waitfor, walkfor, runfor, sprintfor, igt, timers, chainroll
     
     Recording and Playback:
         Functions:
