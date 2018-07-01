@@ -118,6 +118,17 @@ class BaseHook(ABC):
         except GameNotRunningError:
             self.rehook()
 
+    def read_memory(self, address, length):
+        out = (BYTE*length)()
+        ReadProcessMemory(self.handle, LPVOID(address), pointer(out),
+                          SIZE(length), pointer(SIZE(0)))
+        return bytes(out)
+
+    def write_memory(self, address, data):
+        ptr = pointer((BYTE*len(data))(*data))
+        WriteProcessMemory(self.handle, LPVOID(address), ptr,
+                           SIZE(len(data)), pointer(SIZE(0)))
+
 
 class PTDEHook(BaseHook):
     """
@@ -199,17 +210,6 @@ class PTDEHook(BaseHook):
         :return: True if running the debug build, False otherwise.
         """
         return self.read_memory(0x400080, 4) == b"\xb4\x34\x96\xce"
-
-    def read_memory(self, address, length):
-        out = (BYTE*length)()
-        ReadProcessMemory(self.handle, LPVOID(address), pointer(out),
-                          SIZE(length), pointer(SIZE(0)))
-        return bytes(out)
-
-    def write_memory(self, address, data):
-        ptr = pointer((BYTE*len(data))(*data))
-        WriteProcessMemory(self.handle, LPVOID(address), ptr,
-                           SIZE(len(data)), pointer(SIZE(0)))
 
     def write_int(self, address, value, length, signed=False):
         try:
