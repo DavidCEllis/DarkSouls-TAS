@@ -33,6 +33,7 @@ __all__ = [
     'framedupe',
     'joy_moveswap',
     'poopwalk',
+    'force_quit',
 ]
 
 
