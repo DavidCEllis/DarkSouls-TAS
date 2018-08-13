@@ -1,7 +1,7 @@
 import time
 from contextlib import contextmanager
 
-from ds_tas.engine.hooks import PTDEHook
+from .hooks import PTDEHook
 from ..controller import KeyPress, KeySequence, print_press
 from ..exceptions import GameNotRunningError
 
