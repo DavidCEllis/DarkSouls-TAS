@@ -351,6 +351,17 @@ class PTDEHook(BaseHook):
         else:
             self.write_memory(ptr, b'\x0f\x94\xc0')
 
+    def disable_mouse(self, state):
+        cursor_ptr = 0x644337 if self.debug else 0x6441A7
+        click_ptr = 0x644357 if self.debug else 0x6441C7
+
+        if state:
+            self.write_memory(cursor_ptr, b'\xEB')
+            self.write_memory(click_ptr, b'\x90\xE9')
+        else:
+            self.write_memory(cursor_ptr, b'\x77')
+            self.write_memory(click_ptr, b'\x0F\x87')
+
     def igt(self):
         """
         Get the In Game Time

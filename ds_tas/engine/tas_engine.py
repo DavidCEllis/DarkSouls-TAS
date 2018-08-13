@@ -65,6 +65,7 @@ class TAS:
         try:
             self.h.controller(False)
             self.h.background_input(True)
+            self.h.disable_mouse(True)
             yield
         except PermissionError:
             raise GameNotRunningError(
@@ -72,8 +73,9 @@ class TAS:
                 'Call tas.rehook() to reconnect.'
             )
         finally:
-            self.h.controller(True)
+            self.h.disable_mouse(False)
             self.h.background_input(False)
+            self.h.controller(True)
 
     def _clear(self):
         """
