@@ -1,11 +1,14 @@
-"""Hook to access the memory of Dark Souls PTDE"""
+"""Hook to access the memory of Dark Souls"""
+from abc import ABC, abstractmethod
+
 from ctypes import (
-    windll, WinError, WINFUNCTYPE, POINTER, pointer, Structure, sizeof, cast
+    windll, POINTER, pointer, Structure, sizeof, cast
 )
 from ctypes.wintypes import (
-    BOOL, BYTE, CHAR, DWORD, HANDLE, HMODULE,
-    HWND, LPCSTR, LPCVOID, LPDWORD, LPVOID, SIZE
+    BYTE, CHAR, DWORD, HMODULE, LPVOID, SIZE
 )
+
+from ds_tas.exceptions import GameNotRunningError
 
 
 class MODULEENTRY32(Structure):
@@ -21,72 +24,33 @@ class MODULEENTRY32(Structure):
                 ("szExePath", CHAR*260)]
 
 
-def err_on_zero_or_null_check(result, func, args):
-    if not result:
-        raise WinError()
-    return args
+# Short aliases for kernel32 and user32 functions
+ReadProcessMemory = windll.kernel32.ReadProcessMemory
+WriteProcessMemory = windll.kernel32.WriteProcessMemory
+OpenProcess = windll.kernel32.OpenProcess
+CreateToolhelp32Snapshot = windll.kernel32.CreateToolhelp32Snapshot
+Module32First = windll.kernel32.Module32First
+Module32Next = windll.kernel32.Module32Next
+CloseHandle = windll.kernel32.CloseHandle
+TerminateProcess = windll.kernel32.TerminateProcess
+
+FindWindowW = windll.user32.FindWindowW
+GetWindowThreadProcessId = windll.user32.GetWindowThreadProcessId
 
 
-def quick_win_define(name, output, *args, **kwargs):
-    dllname, fname = name.split('.')
-    params = kwargs.get('params', None)
-    if params:
-        params = tuple((x, ) for x in params)
-    prototype = WINFUNCTYPE(output, *args)
-    func = prototype((fname, getattr(windll, dllname)), params)
-    err = kwargs.get('err', err_on_zero_or_null_check)
-    if err:
-        func.errcheck = err
-
-    def ret(*args2):
-        return output(func(*args2))
-    return ret
-
-
-ReadProcessMemory = quick_win_define("Kernel32.ReadProcessMemory",
-                                     BOOL, HANDLE, LPCVOID, LPVOID,
-                                     SIZE, POINTER(SIZE))
-
-WriteProcessMemory = quick_win_define("Kernel32.WriteProcessMemory",
-                                      BOOL, HANDLE, LPVOID, LPCVOID,
-                                      SIZE, POINTER(SIZE))
-
-FindWindowA = quick_win_define("User32.FindWindowA",
-                               HWND, LPCSTR, LPCSTR)
-
-GetWindowThreadProcessId = quick_win_define("User32.GetWindowThreadProcessId",
-                                            DWORD, HWND, LPDWORD)
-
-OpenProcess = quick_win_define("Kernel32.OpenProcess",
-                               HANDLE, DWORD, BOOL, DWORD)
-
-CreateToolhelp32Snapshot = quick_win_define("Kernel32.CreateToolhelp32Snapshot",
-                                            HANDLE, DWORD, DWORD)
-
-Module32First = quick_win_define("Kernel32.Module32First",
-                                 BOOL, HANDLE, POINTER(MODULEENTRY32))
-
-Module32Next = quick_win_define("Kernel32.Module32Next",
-                                BOOL, HANDLE, POINTER(MODULEENTRY32))
-
-CloseHandle = quick_win_define("Kernel32.CloseHandle",
-                               BOOL, HANDLE)
-
-
-class PTDEHook:
+class BaseHook(ABC):
     """
-    Hook Dark Souls
-
-    Provides functions to read and write the memory of dark souls
+    Abstract class for all of the required methods needed for
+    a game hook.
     """
+    WINDOW_NAME = ''
 
     def __init__(self):
-        # Declare instance variables
+        self.w_handle = None
         self.w_handle = None
         self.process_id = None
         self.handle = None
         self.xinput_address = None
-        self.debug = False
 
         # Actually get the hook
         self.acquire()
@@ -94,11 +58,101 @@ class PTDEHook:
     def __del__(self):
         self.release()
 
+    @abstractmethod
+    def acquire(self):
+        pass
+
+    @abstractmethod
+    def release(self):
+        pass
+
+    @abstractmethod
+    def igt(self):
+        """
+        Get the in game time in milliseconds.
+
+        :return: game time in ms
+        """
+        pass
+
+    @abstractmethod
+    def frame_count(self):
+        pass
+
+    @abstractmethod
+    def controller(self, state):
+        """
+        Enable or disable the controller
+
+        :param state: True to enable, False to disable
+        :return: None
+        """
+
+    @abstractmethod
+    def background_input(self, state):
+        """
+        Enable or disable input while the game is in the background
+
+        :param state: True to enable, False to disable
+        :return: None
+        """
+
+    def rehook(self):
+        self.release()
+        try:
+            self.acquire()
+        except OSError:
+            raise GameNotRunningError(
+                f"Could not acquire the TAS Hook to {self.WINDOW_NAME}. "
+                "Make sure the game is running."
+            )
+
+    def check_and_rehook(self):
+        """
+        Check if the game is running, if not try to rehook.
+
+        :return:
+        """
+        try:
+            self.igt()
+        except GameNotRunningError:
+            self.rehook()
+
+    def read_memory(self, address, length):
+        out = (BYTE*length)()
+        ReadProcessMemory(self.handle, LPVOID(address), pointer(out),
+                          SIZE(length), pointer(SIZE(0)))
+        return bytes(out)
+
+    def write_memory(self, address, data):
+        ptr = pointer((BYTE*len(data))(*data))
+        WriteProcessMemory(self.handle, LPVOID(address), ptr,
+                           SIZE(len(data)), pointer(SIZE(0)))
+
+
+class PTDEHook(BaseHook):
+    """
+    Hook Dark Souls: Prepare To Die Edition
+
+    Provides functions to read and write the memory of dark souls
+    """
+    WINDOW_NAME = "DARK SOULS"
+
+    def __init__(self):
+        self.debug = False
+        super().__init__()
+
     def acquire(self):
         """
         Acquire a hook into the game window.
         """
-        self.w_handle = FindWindowA(None, b"DARK SOULS")
+        self.w_handle = FindWindowW(None, self.WINDOW_NAME)
+        # Error if game not found
+        if self.w_handle == 0:
+            raise GameNotRunningError(f"Could not find the {self.WINDOW_NAME} "
+                                      f"game window. "
+                                      f"Make sure the game is running.")
+
         self.process_id = DWORD(0)
         GetWindowThreadProcessId(self.w_handle, pointer(self.process_id))
         # Open process with PROCESS_TERMINATE, PROCESS_VM_OPERATION,
@@ -112,7 +166,6 @@ class PTDEHook:
         """
         Release the hooks
         """
-
         if not (self.handle or self.w_handle):
             return
 
@@ -125,7 +178,7 @@ class PTDEHook:
                 pass
 
     def force_quit(self):
-        result = windll.kernel32.TerminateProcess(self.handle)
+        result = TerminateProcess(self.handle)
         if result == 0:
             print('Quit Failed')
         else:
@@ -157,17 +210,6 @@ class PTDEHook:
         :return: True if running the debug build, False otherwise.
         """
         return self.read_memory(0x400080, 4) == b"\xb4\x34\x96\xce"
-
-    def read_memory(self, address, length):
-        out = (BYTE*length)()
-        ReadProcessMemory(self.handle, LPVOID(address), pointer(out),
-                          SIZE(length), pointer(SIZE(0)))
-        return bytes(out)
-
-    def write_memory(self, address, data):
-        ptr = pointer((BYTE*len(data))(*data))
-        WriteProcessMemory(self.handle, LPVOID(address), ptr,
-                           SIZE(len(data)), pointer(SIZE(0)))
 
     def write_int(self, address, value, length, signed=False):
         try:
@@ -309,6 +351,17 @@ class PTDEHook:
         else:
             self.write_memory(ptr, b'\x0f\x94\xc0')
 
+    def disable_mouse(self, state):
+        cursor_ptr = 0x644337 if self.debug else 0x6441A7
+        click_ptr = 0x644357 if self.debug else 0x6441C7
+
+        if state:
+            self.write_memory(cursor_ptr, b'\xEB')
+            self.write_memory(click_ptr, b'\x90\xE9')
+        else:
+            self.write_memory(cursor_ptr, b'\x77')
+            self.write_memory(click_ptr, b'\x0F\x87')
+
     def igt(self):
         """
         Get the In Game Time
@@ -319,7 +372,14 @@ class PTDEHook:
             ptr = 0x137C8C0
         else:
             ptr = 0x1378700
-        ptr = self.read_int(ptr, 4)
+        try:
+            ptr = self.read_int(ptr, 4)
+        except OSError:
+            raise GameNotRunningError(
+                "Could not read IGT from the game. "
+                "Use tas.rehook() to reconnect."
+            )
+
         if ptr == 0:
             raise RuntimeError("Couldn't find the pointer to IGT")
         ptr += 0x68
@@ -336,8 +396,40 @@ class PTDEHook:
             ptr = 0x137C7C4
         else:
             ptr = 0x1378604
-        ptr = self.read_int(ptr, 4)
+        try:
+            ptr = self.read_int(ptr, 4)
+        except OSError:
+            raise GameNotRunningError(
+                "Could not read frame count from the game. "
+                "Use tas.rehook() to reconnect."
+            )
         if ptr == 0:
             raise RuntimeError("Couldn't find the pointer to the frame count")
         ptr += 0x58
         return self.read_int(ptr, 4)
+
+
+class RemasterHook(BaseHook):
+    WINDOW_NAME = 'DARK SOULS\u2122: REMASTERED'
+
+    def __init__(self):
+        super().__init__()
+        raise NotImplementedError('Remastered TAS not yet implemented.')
+
+    def acquire(self):
+        return NotImplemented
+
+    def release(self):
+        return NotImplemented
+
+    def igt(self):
+        return NotImplemented
+
+    def frame_count(self):
+        return NotImplemented
+
+    def controller(self, state):
+        return NotImplemented
+
+    def background_input(self, state):
+        return NotImplemented

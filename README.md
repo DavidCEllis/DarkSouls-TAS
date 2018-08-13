@@ -13,6 +13,8 @@ Note that this is designed for use in offline play for testing
 (and maze games). RNG currently makes it impractical to do a consistent
 TAS run at the moment.
 
+**Note: You must have an XInput controller connected**
+
 ## Quick Preset Examples ##
 
 ```python

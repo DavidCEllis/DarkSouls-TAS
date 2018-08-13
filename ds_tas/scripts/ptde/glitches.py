@@ -7,6 +7,7 @@ These will not work at 60fps.
 Available Sequences:
     joy_moveswap - performs the Joy animation and moveswaps to the weapon below
                    the bow (assumes the weapon is too heavy)
+    poopwalk - yes
 
 Available Functions:
     moveswap - Basic moveswap command sequence (to be performed mid animation)
@@ -20,9 +21,9 @@ from time import sleep
 
 from .menus import joy
 
-from ..basics import *
-from ..controller import KeyPress, KeySequence
-from ..exceptions import GameNotRunningError
+from ds_tas.basics import *
+from ds_tas.controller import KeyPress, KeySequence
+from ds_tas.exceptions import GameNotRunningError
 
 __all__ = [
     'moveswap',
@@ -32,6 +33,7 @@ __all__ = [
     'framedupe',
     'joy_moveswap',
     'poopwalk',
+    'force_quit',
 ]
 
 

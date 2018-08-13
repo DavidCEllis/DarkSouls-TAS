@@ -1,7 +1,7 @@
 import time
 from contextlib import contextmanager
 
-from ds_tas.engine.hooks import PTDEHook
+from .hooks import PTDEHook
 from ..controller import KeyPress, KeySequence, print_press
 from ..exceptions import GameNotRunningError
 
@@ -11,22 +11,19 @@ class TAS:
     The high level TAS engine - provides more user friendly functions
     than working directly with the hook.
 
+    This class handles the keypresses and sequences and the command
+    queue.
+
     Initialise with a hook to work with remaster - creating with no
     arguments will attempt to create a hook to Dark Souls PTDE.
 
-    :param hook: TAS Hook into the game.
+    :param hook: TAS Hook type to hook into the game.
     """
     def __init__(self, hook=None):
         if hook is None:
-            try:
-                self.h = PTDEHook()
-            except OSError:
-                raise GameNotRunningError(
-                    "Could not acquire the TAS Hook. "
-                    "Make sure the game is running."
-                )
-        else:
-            self.h = hook
+            hook = PTDEHook
+
+        self.h = hook()
         self.queue = []
 
     def igt(self):
@@ -35,23 +32,15 @@ class TAS:
 
         :return: In game time in ms(?)
         """
-        try:
-            return self.h.igt()
-        except OSError:
-            raise GameNotRunningError(
-                "Could not read IGT from the game. "
-                "Use tas.rehook() to reconnect."
-            )
+        return self.h.igt()
 
     def rehook(self):
-        self.h.release()
-        try:
-            self.h.acquire()
-        except OSError:
-            raise GameNotRunningError(
-                "Could not acquire the TAS Hook. "
-                "Make sure the game is running."
-            )
+        """
+        Make the TAS Hook reconnect
+
+        :return:
+        """
+        self.h.rehook()
 
     def check_and_rehook(self):
         """
@@ -59,22 +48,13 @@ class TAS:
 
         :return:
         """
-        try:
-            self.igt()
-        except GameNotRunningError:
-            self.rehook()
+        self.h.check_and_rehook()
 
     def force_quit(self):
         self.h.force_quit()
 
     def frame_count(self):
-        try:
-            return self.h.frame_count()
-        except OSError:
-            raise GameNotRunningError(
-                "Could not read frame count from the game. "
-                "Use tas.rehook() to reconnect."
-            )
+        return self.h.frame_count()
 
     @contextmanager
     def tas_control(self):
@@ -85,6 +65,7 @@ class TAS:
         try:
             self.h.controller(False)
             self.h.background_input(True)
+            self.h.disable_mouse(True)
             yield
         except PermissionError:
             raise GameNotRunningError(
@@ -92,8 +73,9 @@ class TAS:
                 'Call tas.rehook() to reconnect.'
             )
         finally:
-            self.h.controller(True)
+            self.h.disable_mouse(False)
             self.h.background_input(False)
+            self.h.controller(True)
 
     def _clear(self):
         """

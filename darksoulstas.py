@@ -3,16 +3,17 @@ Launch a Dark Souls TAS Console with helpful commands pre-loaded.
 
 Uses the STDLIB 'code' module to launch the terminal.
 """
-import sys
-import pydoc
 import code
+import pydoc
+import sys
 import textwrap
 
 from ds_tas import KeySequence, KeyPress, basics
-from ds_tas.scripts import menus, glitches, timers
 from ds_tas.engine import TAS
+from ds_tas.scripts import timers
+from ds_tas.scripts.ptde import glitches, menus
 
-__version__ = '3.0.0b2'
+__version__ = '3.0.0b3'
 
 # Variable names to skip
 skip_vars = ['sys', 'code', 'copy', 'textwrap',
@@ -30,7 +31,7 @@ raw_banner = f"""
         s_aim_up, s_aim_down, s_aim_left, s_aim_right
         
     Basic Functions:
-        waitfor, walkfor, runfor, sprintfor, igt, timers
+        waitfor, walkfor, runfor, sprintfor, igt, timers, chainroll
     
     Recording and Playback:
         Functions:

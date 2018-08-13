@@ -10,8 +10,8 @@ Available Functions:
     level_fast
 """
 
-from ..basics import *
-from ..controller import KeySequence
+from ds_tas.basics import *
+from ds_tas.controller import KeySequence
 
 
 __all__ = [

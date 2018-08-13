@@ -57,6 +57,7 @@ __all__ = [
     'sprintfor',
     'runfor',
     'walkfor',
+    'chainroll',
 ]
 
 from .controller import KeyPress
@@ -151,3 +152,21 @@ def sprintfor(frames):
     """
     return frames * sprint
 
+
+def chainroll(rollcount, delay1=9, delay2=19):
+    """
+    Chain rolls with a base roll delay
+    :param rollcount: number of rolls to chain 
+    :param delay1: frame delay for first roll
+    :param delay2: frame delay for subsequent rolls
+    :return: 
+    """""
+    roll = run + b
+    if rollcount < 1:
+        return wait
+    elif rollcount == 1:
+        return roll
+    elif rollcount == 2:
+        return roll + run * delay1 + roll
+    else:
+        return roll + run * delay1 + (roll + run * delay2) * (rollcount - 2) + roll
