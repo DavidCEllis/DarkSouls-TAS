@@ -13,7 +13,7 @@ from ds_tas.engine import TAS
 from ds_tas.scripts import timers
 from ds_tas.scripts.ptde import glitches, menus
 
-__version__ = '3.0.0b3'
+__version__ = '3.0.0b4'
 
 # Variable names to skip
 skip_vars = ['sys', 'code', 'copy', 'textwrap',
