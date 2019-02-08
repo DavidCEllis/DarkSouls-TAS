@@ -15,6 +15,11 @@ Available Functions:
     reset_moveswap - Reset back from moveswap quickly
     itemswap - Attempt to perform the itemswap glitch
     framedupe - perform the frame perfect soul dupe.
+
+Special Functions:
+    force_quit - Perform a force quit on the correct frame for a wrong warp
+                 on the next loading screen. (Will need to rehook after
+                 restarting the game).
 """
 
 from time import sleep
