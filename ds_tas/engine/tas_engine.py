@@ -199,12 +199,13 @@ class TAS:
 
         # Special code for waiting for first input
         if first_input and button_wait:
-            print('Waiting for input')
+            print('Press a button to resume recording.')
             keypress = self.h.read_input()
             while not sum(keypress[4:6] + keypress[10:14]):
                 time.sleep(0.002)
                 keypress = self.h.read_input()
             print('Recording Resumed')
+            print('Press start and select simultaneously to stop recording.')
 
         while True:
             keypress = self.h.read_input()
