@@ -47,8 +47,10 @@ class KeyPress:
     (For most operations you should use the aliases from basics.py)
 
     Example usage:
+        >>> from ds_tas.engine import TAS
+        >>> tas = TAS()
         >>> sprint_10_frames = KeyPress(frames=10, l_thumb_y=32767, b=1)
-        >>> sprint_10_frames.execute()
+        >>> tas.run(sprint_10_frames)
 
     Results of operators:
         KeyPress1 + KeyPress2 = KeySequence([KeyPress1, KeyPress2])
@@ -268,7 +270,7 @@ class KeySequence:
 
     Includes methods for addition and multiplication.
 
-    Use the .execute() method to perform the sequence in game.
+    Use tas.run() to perform the sequence in game.
 
     :param sequence: list of KeyPress or KeySequence objects
     """
