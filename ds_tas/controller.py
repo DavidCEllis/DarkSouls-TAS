@@ -13,6 +13,7 @@ __all__ = [
     'controller_keys',
     'KeyPress',
     'KeySequence',
+    'print_press',
 ]
 
 controller_keys = [
