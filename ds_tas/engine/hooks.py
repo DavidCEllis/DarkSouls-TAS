@@ -129,6 +129,18 @@ class BaseHook(ABC):
         WriteProcessMemory(self.handle, LPVOID(address), ptr,
                            SIZE(len(data)), pointer(SIZE(0)))
 
+    def write_int(self, address, value, length, signed=False):
+        try:
+            data = value.to_bytes(length, byteorder='little', signed=signed)
+        except AttributeError:
+            attr_type = str(type(value)).strip("<>acls ")
+            raise TypeError(f"Expected 'int' instead of {attr_type}")
+        self.write_memory(address, data)
+
+    def read_int(self, address, length, signed=False):
+        out = self.read_memory(address, length)
+        return int.from_bytes(out, byteorder='little', signed=signed)
+
 
 class PTDEHook(BaseHook):
     """
@@ -210,18 +222,6 @@ class PTDEHook(BaseHook):
         :return: True if running the debug build, False otherwise.
         """
         return self.read_memory(0x400080, 4) == b"\xb4\x34\x96\xce"
-
-    def write_int(self, address, value, length, signed=False):
-        try:
-            data = value.to_bytes(length, byteorder='little', signed=signed)
-        except AttributeError:
-            attr_type = str(type(value)).strip("<>acls ")
-            raise TypeError(f"Expected 'int' instead of {attr_type}")
-        self.write_memory(address, data)
-
-    def read_int(self, address, length, signed=False):
-        out = self.read_memory(address, length)
-        return int.from_bytes(out, byteorder='little', signed=signed)
 
     def read_input(self):
         """
@@ -414,10 +414,43 @@ class RemasterHook(BaseHook):
 
     def __init__(self):
         super().__init__()
-        raise NotImplementedError('Remastered TAS not yet implemented.')
 
     def acquire(self):
-        return NotImplemented
+        """
+        Acquire a hook into the game window.
+        """
+        self.w_handle = FindWindowW(None, self.WINDOW_NAME)
+        # Error if game not found
+        if self.w_handle == 0:
+            raise GameNotRunningError(f"Could not find the {self.WINDOW_NAME} "
+                                      f"game window. "
+                                      f"Make sure the game is running.")
+
+        self.process_id = DWORD(0)
+        GetWindowThreadProcessId(self.w_handle, pointer(self.process_id))
+        # Open process with PROCESS_TERMINATE, PROCESS_VM_OPERATION,
+        # PROCESS_VM_READ and PROCESS_VM_WRITE access rights
+        flags = 0x1 | 0x8 | 0x10 | 0x20
+        self.handle = OpenProcess(flags, False, self.process_id)
+        self.xinput_address = self.get_module_base_address("XINPUT1_3.dll")
+
+    def get_module_base_address(self, module_name):
+        lpszModuleName = module_name.encode("ascii")
+        # TH32CS_SNAPMODULE and TH32CS_SNAPMODULE32
+        hSnapshot = CreateToolhelp32Snapshot(0x8 | 0x10, self.process_id)
+        ModuleEntry32 = MODULEENTRY32()
+        ModuleEntry32.dwSize = sizeof(MODULEENTRY32)
+        if Module32First(hSnapshot, pointer(ModuleEntry32)):
+            while True:
+                if ModuleEntry32.szModule == lpszModuleName:
+                    dwModuleBaseAddress = ModuleEntry32.modBaseAddr
+                    break
+                if Module32Next(hSnapshot, pointer(ModuleEntry32)):
+                    continue
+                else:
+                    break
+        CloseHandle(hSnapshot)
+        return cast(dwModuleBaseAddress, LPVOID).value
 
     def release(self):
         return NotImplemented
